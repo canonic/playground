@@ -165,6 +165,8 @@ Item {
 
                 property QtObject dynamicObject: QtObject {}
 
+                property var qmlErrors: []
+
                 Metonym.ThemedItem {
                     id: __themedItem
                     inheritanceParent: root.parent
@@ -200,138 +202,147 @@ Item {
                     id: splitView
                     anchors.fill: parent
 
-                    Flickable {
-                        id: flickable
-
-                        clip: true
-                        Metonym.ScrollBar.vertical: Metonym.ScrollBar { }
-                        Metonym.ScrollBar.horizontal: Metonym.ScrollBar { }
+                    Metonym.SplitView {
+                        id: leftSplitView
+                        orientation: Qt.Vertical
 
                         Metonym.SplitView.preferredWidth: splitView.width / 2
-                        contentHeight: textEditor.height
-                        contentWidth: textEditor.width + __lineNumberRepeaterContainer.width
 
-                        boundsBehavior: Flickable.StopAtBounds
+                        Flickable {
+                            id: flickable
 
-                        ListView {
-                            id: __lineNumberRepeaterContainer
-
-                            width: root.lineNumberGutterWidth
-
-                            height: root.lineCount * root.lineHeight
                             clip: true
+                            Metonym.ScrollBar.vertical: Metonym.ScrollBar { }
+                            Metonym.ScrollBar.horizontal: Metonym.ScrollBar { }
 
-                            // Instead of using the actual line count make sure the model is always a multiple
-                            // of 1000. This way a new item is not needed to be created everytime a new line is added which
-                            // caused lag.
-                            model: (Math.round(root.lineCount/1000)*1000) + 1000
+                            Metonym.SplitView.preferredHeight: leftSplitView.height - 100
 
-                            cacheBuffer: 100
-                            reuseItems: true
+                            contentHeight: textEditor.height
+                            contentWidth: textEditor.width + __lineNumberRepeaterContainer.width
 
-                            delegate: Item{
-                                y: model.index * root.lineHeight
-                                width: __lineNumberRepeaterContainer.width
-                                height: root.lineHeight
+                            boundsBehavior: Flickable.StopAtBounds
 
-                                property color color: root.theme.colourMain(0.6)
+                            ListView {
+                                id: __lineNumberRepeaterContainer
 
-                                Metonym.Label{
-                                    id: ideBlockLineNumber
+                                width: root.lineNumberGutterWidth
 
-                                    anchors{
-                                        fill: parent
-                                        rightMargin: 10
-                                    }
+                                height: root.lineCount * root.lineHeight
+                                clip: true
 
-                                    color: parent.color
+                                // Instead of using the actual line count make sure the model is always a multiple
+                                // of 1000. This way a new item is not needed to be created everytime a new line is added which
+                                // caused lag.
+                                model: (Math.round(root.lineCount/1000)*1000) + 1000
 
-                                    text: model.index + 1
+                                cacheBuffer: 100
+                                reuseItems: true
 
-                                    fontGroup: root.theme.font3
-                                    font.pointSize: 12
-                                    horizontalAlignment: Text.AlignRight
-                                }
-                            }
+                                delegate: Item{
+                                    y: model.index * root.lineHeight
+                                    width: __lineNumberRepeaterContainer.width
+                                    height: root.lineHeight
 
-                            function updateSelection() {
-                                const oldSelectionStart = textEditor.oldSelectionStart
-                                const oldSelectionEnd = textEditor.oldSelectionEnd
+                                    property color color: root.theme.colourMain(0.6)
 
-                                const oldStartLine = root.lineNumberFromCursorPos(oldSelectionStart)
-                                const oldEndLine = root.lineNumberFromCursorPos(oldSelectionEnd)
+                                    Metonym.Label{
+                                        id: ideBlockLineNumber
 
-                                const newSelectionStart = textEditor.selectionStart
-                                const newSelectionEnd = textEditor.selectionEnd
+                                        anchors{
+                                            fill: parent
+                                            rightMargin: 10
+                                        }
 
-                                const newStartLine = root.lineNumberFromCursorPos(newSelectionStart)
-                                const newEndLine = root.lineNumberFromCursorPos(newSelectionEnd)
+                                        color: parent.color
 
-                                const removeSelectionItemIdecies = []
-                                const addSelectionItemIndecies = []
-                                for (let i = oldStartLine; i <= oldEndLine; i++)
-                                {
-                                    if (i < newStartLine || i > newEndLine) {
-                                        removeSelectionItemIdecies.push(i)
+                                        text: model.index + 1
+
+                                        fontGroup: root.theme.font3
+                                        font.pointSize: 12
+                                        horizontalAlignment: Text.AlignRight
                                     }
                                 }
 
-                                for (let i = newStartLine; i <= newEndLine; i++)
-                                {
-                                    if (i < oldStartLine || i > oldEndLine) {
-                                        addSelectionItemIndecies.push(i)
+                                function updateSelection() {
+                                    const oldSelectionStart = textEditor.oldSelectionStart
+                                    const oldSelectionEnd = textEditor.oldSelectionEnd
+
+                                    const oldStartLine = root.lineNumberFromCursorPos(oldSelectionStart)
+                                    const oldEndLine = root.lineNumberFromCursorPos(oldSelectionEnd)
+
+                                    const newSelectionStart = textEditor.selectionStart
+                                    const newSelectionEnd = textEditor.selectionEnd
+
+                                    const newStartLine = root.lineNumberFromCursorPos(newSelectionStart)
+                                    const newEndLine = root.lineNumberFromCursorPos(newSelectionEnd)
+
+                                    const removeSelectionItemIdecies = []
+                                    const addSelectionItemIndecies = []
+                                    for (let i = oldStartLine; i <= oldEndLine; i++)
+                                    {
+                                        if (i < newStartLine || i > newEndLine) {
+                                            removeSelectionItemIdecies.push(i)
+                                        }
                                     }
+
+                                    for (let i = newStartLine; i <= newEndLine; i++)
+                                    {
+                                        if (i < oldStartLine || i > oldEndLine) {
+                                            addSelectionItemIndecies.push(i)
+                                        }
+                                    }
+
+                                    // Handle removing the last line
+                                    if (oldStartLine === newStartLine && oldEndLine === newEndLine && newStartLine === root.lineCount - 1)
+                                    {
+                                        addSelectionItemIndecies.push(newStartLine)
+                                    }
+
+                                    removeSelectionItemIdecies.forEach((index) => {
+                                                                           const item = __lineNumberRepeaterContainer.itemAtIndex(index - 1)
+                                                                           item.color = root.theme.colourMain(0.6)
+                                                                       })
+
+                                    addSelectionItemIndecies.forEach((index) => {
+                                                                         const item = __lineNumberRepeaterContainer.itemAtIndex(index - 1)
+                                                                         item.color = root.theme.colourMain(0.8)
+                                                                     })
+
+                                    textEditor.oldSelectionStart = newSelectionStart
+                                    textEditor.oldSelectionEnd = newSelectionEnd
                                 }
-
-                                // Handle removing the last line
-                                if (oldStartLine === newStartLine && oldEndLine === newEndLine && newStartLine === root.lineCount - 1)
-                                {
-                                    addSelectionItemIndecies.push(newStartLine)
-                                }
-
-                                removeSelectionItemIdecies.forEach((index) => {
-                                                                       const item = __lineNumberRepeaterContainer.itemAtIndex(index - 1)
-                                                                       item.color = root.theme.colourMain(0.6)
-                                                                   })
-
-                                addSelectionItemIndecies.forEach((index) => {
-                                                                     const item = __lineNumberRepeaterContainer.itemAtIndex(index - 1)
-                                                                     item.color = root.theme.colourMain(0.8)
-                                                                 })
-
-                                textEditor.oldSelectionStart = newSelectionStart
-                                textEditor.oldSelectionEnd = newSelectionEnd
-                            }
-                        }
-
-                        Metonym.TextArea {
-                            id: textEditor
-
-                            property int oldCursorPosition: 0
-                            property int oldSelectionStart: 0
-                            property int oldSelectionEnd: 0
-
-                            selectByMouse: true
-                            tabStopDistance: fontMetrics.averageCharacterWidth * 4
-                            selectionColor: root.theme.setColourAlpha(root.theme.brand, 0.8)
-
-                            placeholderText: 'place holder text...'
-                            cursorVisible: true
-
-
-
-                            fontGroup: root.theme.font3
-                            font.pointSize: 12
-
-                            anchors {
-                                left: __lineNumberRepeaterContainer.right
                             }
 
-                            width: Math.max(root.width - __lineNumberRepeaterContainer.width, contentWidth)
+                            Metonym.TextArea {
+                                id: textEditor
 
-                            height: Math.max(root.height, contentHeight)
+                                property int oldCursorPosition: 0
+                                property int oldSelectionStart: 0
+                                property int oldSelectionEnd: 0
 
-                            text: "import QtQuick
+                                selectByMouse: true
+                                tabStopDistance: fontMetrics.averageCharacterWidth * 4
+                                selectionColor: root.theme.setColourAlpha(root.theme.brand, 0.8)
+
+                                placeholderText: 'place holder text...'
+                                cursorVisible: true
+
+                                focus: true
+
+
+
+                                fontGroup: root.theme.font3
+                                font.pointSize: 12
+
+                                anchors {
+                                    left: __lineNumberRepeaterContainer.right
+                                }
+
+                                width: Math.max(root.width - __lineNumberRepeaterContainer.width, contentWidth)
+
+                                height: Math.max(root.height, contentHeight)
+
+                                text: "import QtQuick
 import QtQuick.Controls as QtControls
 
 Rectangle {
@@ -344,244 +355,347 @@ Rectangle {
     }
 }"
 
-                            onTextChanged: {
-                                // Not nice but we can't update the cusor when the cursor changes because it seems
-                                // the onCursorChanged signal is emitted before the text has actually been updated
-                                root.cursorWordBoundries = root.calculateCursorWordBoundries()
-                                __lineNumberRepeaterContainer.updateSelection()
-                            }
-
-                            onCursorPositionChanged: {
-                                const newCursorPosition = textEditor.cursorPosition
-                                if (Math.abs(textEditor.oldCursorPosition - newCursorPosition) > 1)
-                                {
-                                    autocompleteMenu.visible = false
+                                onTextChanged: {
+                                    // Not nice but we can't update the cusor when the cursor changes because it seems
+                                    // the onCursorChanged signal is emitted before the text has actually been updated
+                                    root.cursorWordBoundries = root.calculateCursorWordBoundries()
+                                    __lineNumberRepeaterContainer.updateSelection()
                                 }
 
-                                textEditor.oldCursorPosition = newCursorPosition
-                                __lineNumberRepeaterContainer.updateSelection()
-
-                                const currentLine = root.lineNumberFromCursorPos(newCursorPosition)
-
-                                const lineHeight = root.lineHeight
-                                const positionRect = textEditor.positionToRectangle(newCursorPosition)
-
-                                const currentLinePixelPosStart = positionRect.y
-                                const currentLinePixelPosEnd = positionRect.y + positionRect.height
-                                const contentYStart = flickable.contentY
-                                const contentHeight = flickable.visibleArea.heightRatio * flickable.contentHeight
-                                const contentYEnd = contentYStart + contentHeight
-
-                                const lineNumberGutterWidth = __lineNumberRepeaterContainer.width
-                                const cursorPosXStart = positionRect.x + lineNumberGutterWidth
-                                const cursorPosXEnd = cursorPosXStart + positionRect.width
-                                const contentXStart = flickable.contentX
-                                const contentWidth = flickable.visibleArea.widthRatio * flickable.contentWidth
-                                const contentXEnd = contentXStart + contentWidth
-
-                                if (currentLinePixelPosEnd > contentYEnd)
-                                {
-                                    flickable.contentY = currentLinePixelPosEnd - contentHeight
-                                }
-
-                                if (currentLinePixelPosStart <= contentYStart)
-                                {
-                                    flickable.contentY = currentLinePixelPosStart
-                                }
-
-                                if (cursorPosXEnd > contentXEnd)
-                                {
-                                    flickable.contentX = (cursorPosXEnd - contentWidth)
-                                }
-
-                                if (cursorPosXStart <= contentXStart)
-                                {
-                                    flickable.contentX = cursorPosXStart
-                                }
-                            }
-
-                            Keys.onPressed: (event) => {
-                                if (isWordChar(event.text))
-                                {
-                                    if (!autocompleteMenu.visible)
+                                onCursorPositionChanged: {
+                                    const newCursorPosition = textEditor.cursorPosition
+                                    if (Math.abs(textEditor.oldCursorPosition - newCursorPosition) > 1)
                                     {
-                                        autocompleteMenu.visible = true
-                                    }
-                                }
-                            }
-
-                            Keys.onUpPressed: (event) => {
-                                if (autocompleteMenu.visible)
-                                {
-                                    autocompleteMenu.currentIndex = autocompleteMenu.currentIndex - 1
-                                    event.accepted = true
-                                }
-                                else {
-                                    event.accepted = false
-                                }
-                            }
-
-                            Keys.onDownPressed: (event) => {
-                                if (autocompleteMenu.visible)
-                                {
-                                    autocompleteMenu.currentIndex = autocompleteMenu.currentIndex + 1
-                                    event.accepted = true
-                                }
-                                else {
-                                    event.accepted = false
-                                }
-                            }
-
-                            Keys.onReturnPressed: (event) => {
-                                const cursorPosition = textEditor.cursorPosition
-                                const text = textEditor.text
-                                var indent = 0
-                                var index = cursorPosition - 1
-                                var line = ''
-                                var newBlock = false
-
-                                while (index >= 0)
-                                {
-                                    const character = text[index]
-                                    if (character === '\n')
-                                    {
-                                        break;
-                                    }
-                                    else if (character === ' ')
-                                    {
-                                        indent++
-                                    }
-                                    else
-                                    {
-                                        indent = 0
+                                        autocompleteMenu.visible = false
                                     }
 
-                                    line = character + line
-                                    index = index - 1
-                                }
+                                    textEditor.oldCursorPosition = newCursorPosition
+                                    __lineNumberRepeaterContainer.updateSelection()
 
-                                // If the previous line contains an odd number of open brackets
-                                // then indent as if entering a new indent block
-                                const openBracketLineCount = (line.split('{').length - 1)
-                                const closeBracketLineCount = (line.split('}').length - 1)
-                                if ((openBracketLineCount - closeBracketLineCount) % 2 === 1)
-                                {
-                                    indent += root.tabSize
-                                    newBlock = true
-                                }
+                                    const currentLine = root.lineNumberFromCursorPos(newCursorPosition)
 
-                                const insertText = '\n' + Array(indent + 1).join(' ')
+                                    const lineHeight = root.lineHeight
+                                    const positionRect = textEditor.positionToRectangle(newCursorPosition)
 
-                                textEditor.insert(cursorPosition, insertText)
+                                    const currentLinePixelPosStart = positionRect.y
+                                    const currentLinePixelPosEnd = positionRect.y + positionRect.height
+                                    const contentYStart = flickable.contentY
+                                    const contentHeight = flickable.visibleArea.heightRatio * flickable.contentHeight
+                                    const contentYEnd = contentYStart + contentHeight
 
-                                if (newBlock)
-                                {
-                                    // If the following text does not contain a closing bracket
-                                    // charater then insert one
-                                    index = 0
-                                    let bracketCount = 0
-                                    while (index < text.length)
+                                    const lineNumberGutterWidth = __lineNumberRepeaterContainer.width
+                                    const cursorPosXStart = positionRect.x + lineNumberGutterWidth
+                                    const cursorPosXEnd = cursorPosXStart + positionRect.width
+                                    const contentXStart = flickable.contentX
+                                    const contentWidth = flickable.visibleArea.widthRatio * flickable.contentWidth
+                                    const contentXEnd = contentXStart + contentWidth
+
+                                    if (currentLinePixelPosEnd > contentYEnd)
                                     {
-                                        const character = text[index]
+                                        flickable.contentY = currentLinePixelPosEnd - contentHeight
+                                    }
 
-                                        if (character === '}')
+                                    if (currentLinePixelPosStart <= contentYStart)
+                                    {
+                                        flickable.contentY = currentLinePixelPosStart
+                                    }
+
+                                    if (cursorPosXEnd > contentXEnd)
+                                    {
+                                        flickable.contentX = (cursorPosXEnd - contentWidth)
+                                    }
+
+                                    if (cursorPosXStart <= contentXStart)
+                                    {
+                                        flickable.contentX = cursorPosXStart
+                                    }
+                                }
+
+                                Keys.onPressed: (event) => {
+                                    if (isWordChar(event.text))
+                                    {
+                                        if (!autocompleteMenu.visible)
                                         {
-                                            bracketCount = bracketCount - 1
+                                            autocompleteMenu.visible = true
                                         }
-                                        else if (character === '{')
-                                        {
-                                            bracketCount = bracketCount + 1
-                                        }
-
-                                        if (bracketCount < 0)
-                                        {
-                                            break
-                                        }
-
-                                        index = index + 1
-                                    }
-
-                                    if (bracketCount > 0)
-                                    {
-                                        const closeBlockText = '\n' + Array((indent + 1) - root.tabSize).join(' ') + '}'
-                                        textEditor.insert(textEditor.cursorPosition, closeBlockText)
-                                        textEditor.cursorPosition = textEditor.cursorPosition - closeBlockText.length
                                     }
                                 }
 
-                                event.accepted = true
-                            }
+                                Keys.onUpPressed: (event) => {
+                                    if (autocompleteMenu.visible)
+                                    {
+                                        autocompleteMenu.currentIndex = autocompleteMenu.currentIndex - 1
+                                        event.accepted = true
+                                    }
+                                    else {
+                                        event.accepted = false
+                                    }
+                                }
 
-                            Keys.onTabPressed: (event) => {
-                                if(!textEditor.readOnly)
-                                {
-                                    // Replace tabs with spaces
-                                    const text = textEditor.text
+                                Keys.onDownPressed: (event) => {
+                                    if (autocompleteMenu.visible)
+                                    {
+                                        autocompleteMenu.currentIndex = autocompleteMenu.currentIndex + 1
+                                        event.accepted = true
+                                    }
+                                    else {
+                                        event.accepted = false
+                                    }
+                                }
+
+                                Keys.onReturnPressed: (event) => {
                                     const cursorPosition = textEditor.cursorPosition
+                                    const text = textEditor.text
+                                    var indent = 0
                                     var index = cursorPosition - 1
+                                    var line = ''
+                                    var newBlock = false
 
                                     while (index >= 0)
                                     {
                                         const character = text[index]
                                         if (character === '\n')
                                         {
-                                            break
+                                            break;
+                                        }
+                                        else if (character === ' ')
+                                        {
+                                            indent++
+                                        }
+                                        else
+                                        {
+                                            indent = 0
                                         }
 
-                                        index--
+                                        line = character + line
+                                        index = index - 1
                                     }
 
-                                    const currentCursorLineLength = (cursorPosition - 1) - index
-                                    const spacesToAdd = root.tabSize - currentCursorLineLength % root.tabSize
-                                    textEditor.insert(cursorPosition , Array(spacesToAdd + 1).join(' '))
+                                    // If the previous line contains an odd number of open brackets
+                                    // then indent as if entering a new indent block
+                                    const openBracketLineCount = (line.split('{').length - 1)
+                                    const closeBracketLineCount = (line.split('}').length - 1)
+                                    if ((openBracketLineCount - closeBracketLineCount) % 2 === 1)
+                                    {
+                                        indent += root.tabSize
+                                        newBlock = true
+                                    }
+
+                                    const insertText = '\n' + Array(indent + 1).join(' ')
+
+                                    textEditor.insert(cursorPosition, insertText)
+
+                                    if (newBlock)
+                                    {
+                                        // If the following text does not contain a closing bracket
+                                        // charater then insert one
+                                        index = 0
+                                        let bracketCount = 0
+                                        while (index < text.length)
+                                        {
+                                            const character = text[index]
+
+                                            if (character === '}')
+                                            {
+                                                bracketCount = bracketCount - 1
+                                            }
+                                            else if (character === '{')
+                                            {
+                                                bracketCount = bracketCount + 1
+                                            }
+
+                                            if (bracketCount < 0)
+                                            {
+                                                break
+                                            }
+
+                                            index = index + 1
+                                        }
+
+                                        if (bracketCount > 0)
+                                        {
+                                            const closeBlockText = '\n' + Array((indent + 1) - root.tabSize).join(' ') + '}'
+                                            textEditor.insert(textEditor.cursorPosition, closeBlockText)
+                                            textEditor.cursorPosition = textEditor.cursorPosition - closeBlockText.length
+                                        }
+                                    }
+
+                                    event.accepted = true
                                 }
-                                event.accepted = true
+
+                                Keys.onTabPressed: (event) => {
+                                    if(!textEditor.readOnly)
+                                    {
+                                        // Replace tabs with spaces
+                                        const text = textEditor.text
+                                        const cursorPosition = textEditor.cursorPosition
+                                        var index = cursorPosition - 1
+
+                                        while (index >= 0)
+                                        {
+                                            const character = text[index]
+                                            if (character === '\n')
+                                            {
+                                                break
+                                            }
+
+                                            index--
+                                        }
+
+                                        const currentCursorLineLength = (cursorPosition - 1) - index
+                                        const spacesToAdd = root.tabSize - currentCursorLineLength % root.tabSize
+                                        textEditor.insert(cursorPosition , Array(spacesToAdd + 1).join(' '))
+                                    }
+                                    event.accepted = true
+                                }
+
+                                Metonym.Menu {
+                                    id: autocompleteMenu
+
+                                    readonly property rect position: textEditor.cursorRectangle
+
+                                    x: autocompleteMenu.position.x
+                                    y: autocompleteMenu.position.y + autocompleteMenu.position.height + 10
+
+                                    // Exit instantly otherwise the position is updated before the exit animation
+                                    exit: Transition {}
+
+                                    theme: Metonym.Styles.lightThemeLoader.item
+
+                                    focus: false
+
+                                    topPadding: 0
+                                    bottomPadding: 0
+
+                                    Instantiator {
+                                        model: Math.min(root.autoCompleteSuggestions.length, 8)
+                                        asynchronous: true
+                                        active: model > 0
+
+                                        Metonym.MenuItem {
+                                            readonly property var suggestion: root.autoCompleteSuggestions[index]
+                                            text: suggestion !== undefined ? suggestion.value: ''
+                                            height: 30
+                                            onTriggered: {
+                                                const editor = textEditor
+                                                const cursorPotion = editor.cursorPosition
+                                                const autoCompleteWord = root.autoCompleteWord
+                                                editor.forceActiveFocus()
+                                                editor.remove(cursorPotion - autoCompleteWord.length, cursorPotion)
+                                                editor.insert(cursorPotion - autoCompleteWord.length, suggestion.value)
+                                            }
+                                        }
+
+                                        // The trick is on those two lines
+                                        onObjectAdded: (index, object) => autocompleteMenu.insertItem(index, object)
+                                        onObjectRemoved: (index, object) => autocompleteMenu.removeItem(object)
+                                    }
+
+                                    closePolicy: Metonym.Popup.NoAutoClose
+                                    visible: false
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            id: consoleItem
+
+                            property bool displayFileNames: true
+                            property bool displayLineNumber: true
+
+                            color: root.theme instanceof Metonym.CanonicDarkTheme ? root.theme.col17: root.theme.col19
+                            Metonym.SplitView.preferredHeight: 100
+
+                            Rectangle {
+                                width: consoleControls.width
+                                height: consoleControls.height
+                                color: root.theme instanceof Metonym.CanonicDarkTheme ? root.theme.col16: root.theme.col18
                             }
 
-                            Metonym.Menu {
-                                id: autocompleteMenu
+                            Column {
+                                anchors.fill: parent
 
-                                readonly property rect position: textEditor.cursorRectangle
+                                QtLayouts.RowLayout {
+                                    id: consoleControls
+                                    width: parent.width
 
-                                x: autocompleteMenu.position.x
-                                y: autocompleteMenu.position.y + autocompleteMenu.position.height + 10
+                                    spacing: 10
 
-                                // Exit instantly otherwise the position is updated before the exit animation
-                                exit: Transition {}
-
-                                theme: Metonym.Styles.lightThemeLoader.item
-
-                                focus: false
-
-                                topPadding: 0
-                                bottomPadding: 0
-
-                                Instantiator {
-                                    model: Math.min(root.autoCompleteSuggestions.length, 8)
-                                    asynchronous: true
-                                    active: model > 0
-
-                                    Metonym.MenuItem {
-                                        readonly property var suggestion: root.autoCompleteSuggestions[index]
-                                        text: suggestion !== undefined ? suggestion.value: ''
-                                        height: 30
-                                        onTriggered: {
-                                            const editor = textEditor
-                                            const cursorPotion = editor.cursorPosition
-                                            const autoCompleteWord = root.autoCompleteWord
-                                            editor.forceActiveFocus()
-                                            editor.remove(cursorPotion - autoCompleteWord.length, cursorPotion)
-                                            editor.insert(cursorPotion - autoCompleteWord.length, suggestion.value)
-                                        }
+                                    Metonym.Label {
+                                        QtLayouts.Layout.leftMargin: 10
+                                        text: ">_"
+                                        enabled: false
                                     }
 
-                                    // The trick is on those two lines
-                                    onObjectAdded: (index, object) => autocompleteMenu.insertItem(index, object)
-                                    onObjectRemoved: (index, object) => autocompleteMenu.removeItem(object)
+                                    Item {
+                                        QtLayouts.Layout.minimumHeight: 5
+                                        QtLayouts.Layout.fillWidth: true
+                                    }
+
+                                    Metonym.MenuBar {
+                                        Metonym.Menu {
+                                            title: "Options"
+
+                                            theme: Metonym.Styles.lightThemeLoader.item
+
+                                            Metonym.MenuItem {
+                                                id: showFileNamesBtn
+                                                text: "Show File Names"
+                                                checkable: true
+                                                checked: true
+                                            }
+                                            Metonym.MenuItem {
+                                                id: showLineNumbersBtn
+                                                text: "Show Line Numbers"
+                                                checkable : true
+                                                checked: true
+                                            }
+                                            Metonym.MenuItem {
+                                                id: showColumnNumbersBtn
+                                                text: "Show Column Numbers"
+                                                checkable : true
+                                                checked: true
+                                            }
+                                        }
+                                    }
                                 }
 
-                                closePolicy: Metonym.Popup.NoAutoClose
-                                visible: false
+                                Repeater {
+                                    model: root.qmlErrors.length
+
+                                    delegate: Metonym.Label {
+                                        required property int index
+                                        readonly property var qmlError: root.qmlErrors[index]
+
+                                        text: {
+                                            var text = ''
+
+                                            if (showFileNamesBtn.checked)
+                                            {
+                                                text = 'File "' + qmlError.fileName + '"'
+                                            }
+
+                                            if (showLineNumbersBtn.checked)
+                                            {
+                                                if(text) text += ' '
+
+                                                text += 'Line ' + qmlError.lineNumber
+                                            }
+
+                                            if (showColumnNumbersBtn.checked)
+                                            {
+                                                if(text) text += ' '
+
+                                                text += 'Column ' + qmlError.columnNumber
+                                            }
+
+                                            text += '\n    ' + qmlError.message
+                                            return text
+                                        }
+                                        fontGroup: root.theme.font3
+                                        font.pointSize: 11
+                                    }
+                                }
                             }
                         }
                     }
@@ -600,17 +714,20 @@ Rectangle {
                                 {
                                     var newObject = Qt.createQmlObject(textEditor.text,
                                                                        dynamicQMLContainer,
-                                                                       "dynamic Snippet");
+                                                                       'CanonicPlayground');
 
                                     // cleanup the previous item
                                     root.dynamicObject.destroy()
 
                                     // Store the new object
                                     root.dynamicObject = newObject
+
+                                    // Reset qml errors
+                                    root.qmlErrors = []
                                 }
                                 catch (error)
                                 {
-                                    console.log(error)
+                                    root.qmlErrors = error.qmlErrors
                                 }
                             }
                         }
