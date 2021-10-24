@@ -152,6 +152,90 @@ Item {
                     return Math.max(lastLineNumberStrLength, 3) * fontMetrics.maximumCharacterWidth
                 }
 
+                readonly property var characterPair: {
+                    const cursorPosition = textEditor.cursorPosition
+
+                    const pairs = [['{', '}'], ['[', ']'], ['(', ')']]
+                    const text = textEditor.text
+
+                    // Get the char after the cursor
+                    const c1 = text[cursorPosition]
+
+                    // Get the char before the cursor
+                    const c2 = text[cursorPosition - 1]
+
+                    var isStartingChar, matchingChar, isC1
+                    for (let i = 0; i < pairs.length; i++)
+                    {
+                        const pair = pairs[i]
+
+                        if (c1 === pair[0])
+                        {
+                            isC1 = true
+                            isStartingChar = true
+                            matchingChar = pair[1]
+                            break
+                        }
+                        else if (c1 === pair[1])
+                        {
+                            isC1 = true
+                            isStartingChar = false
+                            matchingChar = pair[0]
+                            break
+                        }
+
+                        if (c2 === pair[0])
+                        {
+                            isC1 = false
+                            isStartingChar = true
+                            matchingChar = pair[1]
+                            break
+                        }
+                        else if (c2 === pair[1])
+                        {
+                            isC1 = false
+                            isStartingChar = false
+                            matchingChar = pair[0]
+                            break
+                        }
+                    }
+
+                    if (matchingChar === undefined)
+                    {
+                        return [-1, -1]
+                    }
+
+                    // A pair character has been found so try to find it's match
+                    const startingIndex = isC1? cursorPosition : cursorPosition - 1
+                    const matchedChar = isC1? c1 : c2
+                    const stepSize = isStartingChar? 1 : -1
+                    var currentPosition = startingIndex
+                    var counter = 0
+
+                    // If we have found a starting character then iterate forwards
+                    while (currentPosition >= 0 && currentPosition < text.length)
+                    {
+                        currentPosition += stepSize
+                        const character = text[currentPosition]
+
+                        if (character === matchedChar)
+                        {
+                            counter++
+                        }
+
+                        if (character === matchingChar)
+                        {
+                            if (counter === 0)
+                            {
+                                return [startingIndex, currentPosition]
+                            }
+                            counter--
+                        }
+                    }
+
+                    return [startingIndex, -1]
+                }
+
 
                 function linesInString(string)
                 {
@@ -228,6 +312,34 @@ Item {
                                 color: root.theme instanceof Metonym.CanonicDarkTheme ? root.theme.colourMain(0.4) : root.theme.colourMain(0.97)
                                 height: root.lineHeight * ((root.lineNumberFromCursorPos(textEditor.selectionEnd) - root.lineNumberFromCursorPos(textEditor.selectionStart)) + 1)
                                 y: root.lineHeight * (root.lineNumberFromCursorPos(textEditor.selectionStart) - 1)
+                            }
+
+                            Rectangle {
+                                id: pairIndicatorStart
+
+                                color: 'yellow'
+
+                                readonly property rect positionRect: root.characterPair[0] !== -1 ? textEditor.positionToRectangle(root.characterPair[0]) : Qt.rect(0,0,0,0)
+                                height: 1
+                                width: fontMetrics.averageCharacterWidth
+                                y: pairIndicatorStart.positionRect.y + pairIndicatorStart.positionRect.height
+                                x: pairIndicatorStart.positionRect.x + __lineNumberRepeaterContainer.width
+
+                                visible: root.characterPair[0] !== -1
+                            }
+
+                            Rectangle {
+                                id: pairIndicatorEnd
+
+                                color: 'yellow'
+
+                                readonly property rect positionRect: root.characterPair[1] !== -1 ? textEditor.positionToRectangle(root.characterPair[1]) : Qt.rect(0,0,0,0)
+                                height: 1
+                                width: fontMetrics.averageCharacterWidth
+                                y: pairIndicatorEnd.positionRect.y + pairIndicatorEnd.positionRect.height
+                                x: pairIndicatorEnd.positionRect.x + __lineNumberRepeaterContainer.width
+
+                                visible: root.characterPair[1] !== -1
                             }
 
                             ListView {
