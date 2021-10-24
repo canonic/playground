@@ -329,8 +329,6 @@ Item {
 
                                 focus: true
 
-
-
                                 fontGroup: root.theme.font3
                                 font.pointSize: 12
 
@@ -338,9 +336,9 @@ Item {
                                     left: __lineNumberRepeaterContainer.right
                                 }
 
-                                width: Math.max(root.width - __lineNumberRepeaterContainer.width, contentWidth)
+                                width: Math.max(flickable.width - __lineNumberRepeaterContainer.width, contentWidth)
 
-                                height: Math.max(root.height, contentHeight)
+                                height: Math.max(flickable.height, contentHeight)
 
                                 text: "import QtQuick
 import QtQuick.Controls as QtControls
