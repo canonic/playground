@@ -609,7 +609,7 @@ Rectangle {
                             property bool displayFileNames: true
                             property bool displayLineNumber: true
 
-                            color: root.theme instanceof Metonym.CanonicDarkTheme ? root.theme.col17: root.theme.col19
+                            color: root.theme instanceof Metonym.CanonicDarkTheme ? root.theme.colourMain(0.25): root.theme.col19
                             Metonym.SplitView.preferredHeight: 100
 
                             Rectangle {
