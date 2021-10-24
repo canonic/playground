@@ -222,6 +222,14 @@ Item {
 
                             boundsBehavior: Flickable.StopAtBounds
 
+                            Rectangle {
+                                id: lineSelectionIndicator
+                                width: parent.width
+                                color: root.theme instanceof Metonym.CanonicDarkTheme ? root.theme.colourMain(0.4) : root.theme.colourMain(0.97)
+                                height: root.lineHeight * ((root.lineNumberFromCursorPos(textEditor.selectionEnd) - root.lineNumberFromCursorPos(textEditor.selectionStart)) + 1)
+                                y: root.lineHeight * (root.lineNumberFromCursorPos(textEditor.selectionStart) - 1)
+                            }
+
                             ListView {
                                 id: __lineNumberRepeaterContainer
 
