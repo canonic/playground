@@ -461,15 +461,53 @@ Item {
                                 height: Math.max(flickable.height, contentHeight)
 
                                 text: "import QtQuick
-import QtQuick.Controls as QtControls
+import QtQuick3D as QtQuick3D
 
-Rectangle {
+/**
+ * Simple rotating cube example
+ **/
+QtQuick3D.View3D {
+    id: view
     anchors.fill: parent
 
-    Text {
-        text: 'Hello World'
-        font.pixelSize: 50
-        anchors.centerIn: parent
+    environment: QtQuick3D.SceneEnvironment {
+    }
+
+    QtQuick3D.OrthographicCamera {
+        position: Qt.vector3d(0, 250, 300)
+        eulerRotation.x: -40
+    }
+
+    QtQuick3D.DirectionalLight {
+        eulerRotation.x: -30
+        eulerRotation.y: -70
+        color: root.theme.brand
+    }
+
+    QtQuick3D.DirectionalLight {
+        eulerRotation.x: -20
+        eulerRotation.y: 70
+        brightness: 0.1
+    }
+
+    QtQuick3D.Model {
+        position: Qt.vector3d(0, 0, 0)
+        source: '#Cube'
+
+        materials: [
+            QtQuick3D.DefaultMaterial {
+                diffuseColor: 'white'
+            }
+        ]
+
+        SequentialAnimation on eulerRotation.y {
+            loops: Animation.Infinite
+            PropertyAnimation {
+                duration: 4000
+                from: 0
+                to: 360
+            }
+        }
     }
 }"
 
