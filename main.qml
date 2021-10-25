@@ -906,6 +906,8 @@ QtQuick3D.View3D {
                             property bool displayFileNames: true
                             property bool displayLineNumber: true
 
+                            readonly property color errorColour: '#bf5b75'
+
                             color: root.theme instanceof Metonym.CanonicDarkTheme ? root.theme.colourMain(0.25): root.theme.col19
                             Metonym.SplitView.preferredHeight: 100
 
@@ -922,12 +924,46 @@ QtQuick3D.View3D {
                                     id: consoleControls
                                     width: parent.width
 
-                                    spacing: 10
+                                    spacing: 0
+
+                                    Metonym.Icon {
+                                        QtLayouts.Layout.leftMargin: 10
+                                        QtLayouts.Layout.alignment: Qt.AlignVCenter
+
+                                        source: root.theme.icons.consolePrompt
+
+                                        color: root.theme.label.disabledColor
+
+                                        height: 20
+                                        width: 20
+                                    }
 
                                     Metonym.Label {
-                                        QtLayouts.Layout.leftMargin: 10
-                                        text: ">_"
-                                        enabled: false
+                                        QtLayouts.Layout.leftMargin: 2
+                                        QtLayouts.Layout.alignment: Qt.AlignVCenter
+
+                                        text: "Console"
+                                    }
+
+                                    Metonym.Icon {
+                                        QtLayouts.Layout.leftMargin: 20
+                                        QtLayouts.Layout.alignment: Qt.AlignVCenter
+
+                                        source: root.theme.icons.warningCircle
+
+                                        color: root.qmlErrors.length > 0 ? consoleItem.errorColour : root.theme.label.disabledColor
+
+                                        height: 20
+                                        width: 20
+                                    }
+
+                                    Metonym.Label {
+                                        QtLayouts.Layout.leftMargin: 2
+                                        QtLayouts.Layout.alignment: Qt.AlignVCenter
+
+                                        text: "" + root.qmlErrors.length
+                                        defaultColor: consoleItem.errorColour
+                                        enabled: root.qmlErrors.length > 0
                                     }
 
                                     Item {
@@ -964,39 +1000,64 @@ QtQuick3D.View3D {
                                 }
 
                                 Repeater {
+                                    width: parent.width
                                     model: root.qmlErrors.length
 
-                                    delegate: Metonym.Label {
+                                    delegate: Rectangle {
+                                        id: errorDelegate
                                         required property int index
                                         readonly property var qmlError: root.qmlErrors[index]
 
-                                        text: {
-                                            var text = ''
+                                        color: root.theme.setColourAlpha(consoleItem.errorColour, 0.5)
 
-                                            if (showFileNamesBtn.checked)
-                                            {
-                                                text = 'File "' + qmlError.fileName + '"'
-                                            }
+                                        width: parent.width
+                                        height: errorDelegateContent.contentHeight
 
-                                            if (showLineNumbersBtn.checked)
-                                            {
-                                                if(text) text += ' '
-
-                                                text += 'Line ' + qmlError.lineNumber
-                                            }
-
-                                            if (showColumnNumbersBtn.checked)
-                                            {
-                                                if(text) text += ' '
-
-                                                text += 'Column ' + qmlError.columnNumber
-                                            }
-
-                                            text += '\n    ' + qmlError.message
-                                            return text
+                                        Rectangle {
+                                            height: parent.height
+                                            width: 10
+                                            color: consoleItem.errorColour
                                         }
-                                        fontGroup: root.theme.font3
-                                        font.pointSize: 11
+
+                                        Metonym.Label {
+                                            id: errorDelegateContent
+
+                                            anchors {
+                                                left: parent.left
+                                                leftMargin: 20
+                                                right: parent.right
+                                            }
+
+                                            height: parent.height
+
+                                            text: {
+                                                var text = ''
+
+                                                if (showFileNamesBtn.checked)
+                                                {
+                                                    text = 'File "' + errorDelegate.qmlError.fileName + '"'
+                                                }
+
+                                                if (showLineNumbersBtn.checked)
+                                                {
+                                                    if(text) text += ' '
+
+                                                    text += 'Line ' + errorDelegate.qmlError.lineNumber
+                                                }
+
+                                                if (showColumnNumbersBtn.checked)
+                                                {
+                                                    if(text) text += ' '
+
+                                                    text += 'Column ' + errorDelegate.qmlError.columnNumber
+                                                }
+
+                                                text += '\n    ' + qmlError.message
+                                                return text
+                                            }
+                                            fontGroup: root.theme.font3
+                                            font.pointSize: 11
+                                        }
                                     }
                                 }
                             }
