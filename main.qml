@@ -247,6 +247,31 @@ Item {
                     return linesInString(textEditor.getText(0, pos))
                 }
 
+                /**
+                 * Given a cursor position return the position marking the start of the line
+                 **/
+                function getLineStart(pos)
+                {
+                    const text = textEditor.text
+
+                    var lineStart = pos - 1
+
+                    // find the beginning of the line
+                    while (lineStart >= 0)
+                    {
+                        const character = text[lineStart]
+                        if (character === '\n')
+                        {
+                            break
+                        }
+
+                        lineStart--
+                    }
+
+                    return lineStart
+
+                }
+
                 property QtObject dynamicObject: QtObject {}
 
                 property var qmlErrors: []
@@ -441,7 +466,7 @@ Item {
                                 property int oldSelectionEnd: 0
 
                                 selectByMouse: true
-                                tabStopDistance: fontMetrics.averageCharacterWidth * 4
+                                tabStopDistance: fontMetrics.averageCharacterWidth * root.tabSize
                                 selectionColor: root.theme.setColourAlpha(root.theme.brand, 0.8)
 
                                 placeholderText: 'place holder text...'
@@ -679,27 +704,47 @@ QtQuick3D.View3D {
                                     event.accepted = true
                                 }
 
-                                Keys.onTabPressed: (event) => {
+                                Keys.onBacktabPressed: (event) => {
                                     if(!textEditor.readOnly)
                                     {
-                                        // Replace tabs with spaces
+                                        // Use spaces instead of tab characters
                                         const text = textEditor.text
                                         const cursorPosition = textEditor.cursorPosition
-                                        var index = cursorPosition - 1
 
-                                        while (index >= 0)
+                                        const lineStart = root.getLineStart(cursorPosition)
+                                        const currentCursorLineLength = (cursorPosition - 1) - lineStart
+
+                                        var spacesBeforeCursor = 0
+                                        for (let i = cursorPosition - 1; i >= lineStart && spacesBeforeCursor < root.tabSize; i--)
                                         {
-                                            const character = text[index]
-                                            if (character === '\n')
+                                            const character = text[i]
+                                            if (character !== ' ')
                                             {
                                                 break
                                             }
-
-                                            index--
+                                            spacesBeforeCursor++
                                         }
+                                        const spacesToRemove = spacesBeforeCursor
 
-                                        const currentCursorLineLength = (cursorPosition - 1) - index
+                                        textEditor.remove(cursorPosition - spacesBeforeCursor, cursorPosition)
+                                    }
+                                    event.accepted = true
+                                }
+
+                                Keys.onTabPressed: (event) => {
+                                    if(!textEditor.readOnly)
+                                    {
+                                        // Use spaces instead of tab characters
+                                        const text = textEditor.text
+                                        const cursorPosition = textEditor.cursorPosition
+
+                                        const lineStart = root.getLineStart(cursorPosition)
+                                        const currentCursorLineLength = (cursorPosition - 1) - lineStart
+
+                                        // Calculate the number of spaces required to reach the next tab indent
                                         const spacesToAdd = root.tabSize - currentCursorLineLength % root.tabSize
+
+                                        // Insert the spaces into the textEditor at the cursor position
                                         textEditor.insert(cursorPosition , Array(spacesToAdd + 1).join(' '))
                                     }
                                     event.accepted = true
