@@ -140,7 +140,7 @@ Item {
                         return 0
                     }
 
-                    return root.linesInString(text)
+                    return root.linesInString(text) + 1
                 }
 
                 readonly property int tabSize: 4
@@ -239,7 +239,7 @@ Item {
 
                 function linesInString(string)
                 {
-                    return string.split(/\r\n|\r|\n/).length
+                    return string.split(/\r\n|\r|\n/).length - 1
                 }
 
                 function lineNumberFromCursorPos(pos)
@@ -264,11 +264,10 @@ Item {
                         {
                             break
                         }
-
                         lineStart--
                     }
 
-                    return lineStart
+                    return lineStart + 1
 
                 }
 
@@ -336,7 +335,7 @@ Item {
                                 width: parent.width
                                 color: root.theme instanceof Metonym.CanonicDarkTheme ? root.theme.colourMain(0.4) : root.theme.colourMain(0.97)
                                 height: root.lineHeight * ((root.lineNumberFromCursorPos(textEditor.selectionEnd) - root.lineNumberFromCursorPos(textEditor.selectionStart)) + 1)
-                                y: root.lineHeight * (root.lineNumberFromCursorPos(textEditor.selectionStart) - 1)
+                                y: root.lineHeight * root.lineNumberFromCursorPos(textEditor.selectionStart)
                             }
 
                             Rectangle {
@@ -444,12 +443,12 @@ Item {
                                     }
 
                                     removeSelectionItemIdecies.forEach((index) => {
-                                                                           const item = __lineNumberRepeaterContainer.itemAtIndex(index - 1)
+                                                                           const item = __lineNumberRepeaterContainer.itemAtIndex(index)
                                                                            item.color = root.theme.colourMain(0.6)
                                                                        })
 
                                     addSelectionItemIndecies.forEach((index) => {
-                                                                         const item = __lineNumberRepeaterContainer.itemAtIndex(index - 1)
+                                                                         const item = __lineNumberRepeaterContainer.itemAtIndex(index)
                                                                          item.color = root.theme.colourMain(0.8)
                                                                      })
 
@@ -711,22 +710,88 @@ QtQuick3D.View3D {
                                         const text = textEditor.text
                                         const cursorPosition = textEditor.cursorPosition
 
-                                        const lineStart = root.getLineStart(cursorPosition)
-                                        const currentCursorLineLength = (cursorPosition - 1) - lineStart
+                                        const selectionStart = textEditor.selectionStart
+                                        const selectionEnd = textEditor.selectionEnd
 
-                                        var spacesBeforeCursor = 0
-                                        for (let i = cursorPosition - 1; i >= lineStart && spacesBeforeCursor < root.tabSize; i--)
+                                        const selectionStartLine = root.lineNumberFromCursorPos(selectionStart)
+                                        const selectionEndLine = root.lineNumberFromCursorPos(selectionEnd)
+                                        if (selectionStartLine === selectionEndLine)
                                         {
-                                            const character = text[i]
-                                            if (character !== ' ')
-                                            {
-                                                break
-                                            }
-                                            spacesBeforeCursor++
-                                        }
-                                        const spacesToRemove = spacesBeforeCursor
+                                            const lineStart = root.getLineStart(cursorPosition)
+                                            const currentCursorLineLength = (cursorPosition - 1) - lineStart
 
-                                        textEditor.remove(cursorPosition - spacesBeforeCursor, cursorPosition)
+                                            var spacesBeforeCursor = 0
+                                            for (let i = cursorPosition - 1; i >= lineStart && spacesBeforeCursor < root.tabSize; i--)
+                                            {
+                                                const character = text[i]
+                                                if (character !== ' ')
+                                                {
+                                                    break
+                                                }
+                                                spacesBeforeCursor++
+                                            }
+                                            const spacesToRemove = spacesBeforeCursor
+
+                                            textEditor.remove(cursorPosition - spacesBeforeCursor, cursorPosition)
+                                        }
+                                        else {
+                                            const newLineIndicies = []
+                                            const spacesToRemove = []
+                                            let totalSpacesToRemove = 0
+                                            let foundNewLine = false
+
+                                            for (let i = root.getLineStart(selectionStart) - 1; i <= root.getLineStart(selectionEnd); i++)
+                                            {
+                                                // Handle the start of the file
+                                                if (i < 0)
+                                                {
+                                                    foundNewLine = true
+                                                    newLineIndicies.push(i)
+                                                }
+                                                else
+                                                {
+                                                    const character = text[i]
+                                                    if (character === '\n')
+                                                    {
+                                                        foundNewLine = true
+                                                        newLineIndicies.push(i)
+                                                    }
+                                                }
+                                                if (foundNewLine)
+                                                {
+                                                    // Calculate the number of spaces to remove for each new line
+                                                    var currentPos = i + 1
+                                                    while (currentPos < text.length && currentPos - (i + 1) < root.tabSize)
+                                                    {
+                                                        const character = text[currentPos]
+                                                        if (character !== ' ')
+                                                        {
+                                                            break
+                                                        }
+
+                                                        currentPos++
+                                                    }
+                                                    const removeCount = currentPos - (i + 1)
+                                                    totalSpacesToRemove += removeCount
+                                                    spacesToRemove.push(removeCount)
+                                                }
+
+                                                foundNewLine = false
+                                            }
+
+                                            var newText = text
+                                            for (let i = newLineIndicies.length - 1; i >= 0; i--)
+                                            {
+                                                const newLineIndex = newLineIndicies[i]
+                                                const removeCount = spacesToRemove[i]
+                                                if (removeCount > 0)
+                                                {
+                                                    newText = newText.slice(0, newLineIndex + 1) + newText.slice(newLineIndex + 1 + removeCount)
+                                                }
+                                            }
+                                            textEditor.text = newText
+                                            textEditor.select(selectionStart - spacesToRemove[0], selectionEnd - totalSpacesToRemove)
+                                        }
                                     }
                                     event.accepted = true
                                 }
@@ -738,14 +803,51 @@ QtQuick3D.View3D {
                                         const text = textEditor.text
                                         const cursorPosition = textEditor.cursorPosition
 
-                                        const lineStart = root.getLineStart(cursorPosition)
-                                        const currentCursorLineLength = (cursorPosition - 1) - lineStart
+                                        const selectionStart = textEditor.selectionStart
+                                        const selectionEnd = textEditor.selectionEnd
 
-                                        // Calculate the number of spaces required to reach the next tab indent
-                                        const spacesToAdd = root.tabSize - currentCursorLineLength % root.tabSize
+                                        const selectionStartLine = root.lineNumberFromCursorPos(selectionStart)
+                                        const selectionEndLine = root.lineNumberFromCursorPos(selectionEnd)
 
-                                        // Insert the spaces into the textEditor at the cursor position
-                                        textEditor.insert(cursorPosition , Array(spacesToAdd + 1).join(' '))
+                                        if (selectionStartLine === selectionEndLine)
+                                        {
+                                            const lineStart = root.getLineStart(cursorPosition)
+                                            const currentCursorLineLength = (cursorPosition - lineStart)
+
+                                            // Calculate the number of spaces required to reach the next tab indent
+                                            const spacesToAdd = root.tabSize - currentCursorLineLength % root.tabSize
+
+                                            // Insert the spaces into the textEditor at the cursor position
+                                            textEditor.insert(cursorPosition , Array(spacesToAdd + 1).join(' '))
+                                        }
+                                        else
+                                        {
+                                            const newLineIndicies = []
+                                            for (let i = root.getLineStart(selectionStart) - 1; i < root.getLineStart(selectionEnd); i++)
+                                            {
+                                                // Handle the start of the file
+                                                if (i < 0 )
+                                                {
+                                                    newLineIndicies.push(i)
+                                                    continue
+                                                }
+
+                                                const character = text[i]
+                                                if (character === '\n')
+                                                {
+                                                    newLineIndicies.push(i)
+                                                }
+                                            }
+                                            var newText = text
+                                            const tabStr = Array(root.tabSize + 1).join(' ')
+                                            for (let i = newLineIndicies.length - 1; i >= 0; i--)
+                                            {
+                                                const newLineIndex = newLineIndicies[i]
+                                                newText = newText.slice(0, newLineIndex + 1) + tabStr + newText.slice(newLineIndex + 1)
+                                            }
+                                            textEditor.text = newText
+                                            textEditor.select(selectionStart + tabStr.length, selectionEnd + (tabStr.length * (newLineIndicies.length)))
+                                        }
                                     }
                                     event.accepted = true
                                 }
