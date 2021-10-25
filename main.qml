@@ -137,7 +137,7 @@ Item {
                     const text = textEditor.text
 
                     if (text.length === 0) {
-                        return 0
+                        return 1
                     }
 
                     return root.linesInString(text) + 1
@@ -147,9 +147,11 @@ Item {
 
                 readonly property int lineHeight: textEditor.contentHeight / root.lineCount
 
+                readonly property double errorGutterWidth: 25
+
                 readonly property double lineNumberGutterWidth: {
                     const lastLineNumberStrLength = lineCount.toString().length
-                    return Math.max(lastLineNumberStrLength, 3) * fontMetrics.maximumCharacterWidth
+                    return (Math.max(lastLineNumberStrLength, 3) * fontMetrics.maximumCharacterWidth) + errorGutterWidth
                 }
 
                 readonly property var characterPair: {
@@ -323,7 +325,7 @@ Item {
                             Metonym.ScrollBar.vertical: Metonym.ScrollBar { }
                             Metonym.ScrollBar.horizontal: Metonym.ScrollBar { }
 
-                            Metonym.SplitView.preferredHeight: leftSplitView.height - 100
+                            Metonym.SplitView.preferredHeight: leftSplitView.height - 200
 
                             contentHeight: textEditor.height
                             contentWidth: textEditor.width + __lineNumberRepeaterContainer.width
@@ -468,7 +470,6 @@ Item {
                                 tabStopDistance: fontMetrics.averageCharacterWidth * root.tabSize
                                 selectionColor: root.theme.setColourAlpha(root.theme.brand, 0.8)
 
-                                placeholderText: 'place holder text...'
                                 cursorVisible: true
 
                                 focus: true
@@ -898,6 +899,55 @@ QtQuick3D.View3D {
                                     visible: false
                                 }
                             }
+
+                            Repeater {
+                                width: leftSplitView.width
+                                model: root.qmlErrors.length
+
+                                delegate: Item {
+                                    id: editorErrorIndicator
+                                    required property int index
+                                    readonly property var qmlError: root.qmlErrors[index]
+
+                                    y: (editorErrorIndicator.qmlError.lineNumber - 1) * root.lineHeight
+                                    height: root.lineHeight
+                                    width: leftSplitView.width
+
+                                    Metonym.Icon {
+                                        width: parent.height
+                                        height: width
+                                        source: root.theme.icons.warningCircle
+                                        color: consoleItem.errorColour
+                                        anchors.verticalCenter: parent.verticalCenter
+                                    }
+
+                                    Rectangle {
+                                        width: Math.min(editorErrorIndicatorContent.implicitWidth + editorErrorIndicatorContent.anchors.leftMargin, 300)
+                                        height: root.lineHeight
+                                        color: root.theme.setColourAlpha(root.theme.blendColors(consoleItem.errorColour, root.theme.col17, 0.5), 0.85)
+                                        anchors.right: parent.right
+
+                                        Metonym.Label {
+                                            id: editorErrorIndicatorContent
+
+                                            anchors {
+                                                left: parent.left
+                                                leftMargin: 10
+                                                right: parent.right
+                                            }
+
+                                            height: parent.height
+                                            elide: Text.ElideRight
+
+                                            text: qmlError.message
+                                            fontGroup: root.theme.font3
+                                            font.pointSize: 11
+
+                                            horizontalAlignment: Text.AlignRight
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                         Rectangle {
@@ -909,7 +959,7 @@ QtQuick3D.View3D {
                             readonly property color errorColour: '#bf5b75'
 
                             color: root.theme instanceof Metonym.CanonicDarkTheme ? root.theme.colourMain(0.25): root.theme.col19
-                            Metonym.SplitView.preferredHeight: 100
+                            Metonym.SplitView.preferredHeight: 200
 
                             Rectangle {
                                 width: consoleControls.width
