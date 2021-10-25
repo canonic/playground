@@ -1141,7 +1141,14 @@ QtQuick3D.View3D {
                                 }
                                 catch (error)
                                 {
-                                    root.qmlErrors = error.qmlErrors
+                                    if (error.qmlErrors !== undefined)
+                                    {
+                                        root.qmlErrors = error.qmlErrors
+                                    }
+                                    else
+                                    {
+                                        root.qmlErrors = []
+                                    }
                                 }
                             }
                         }
