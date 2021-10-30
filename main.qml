@@ -349,6 +349,20 @@ Item {
                                         label: 'Save'
                                         onClicked: savePopup.open()
                                     }
+
+                                    Metonym.Button {
+                                        width: 34
+                                        height: 34
+
+                                        showBackground: true
+                                        radius: width/2
+
+                                        icon.source: root.theme.icons.githubMark
+
+                                        QtLayouts.Layout.alignment: Qt.AlignVCenter
+
+                                        onClicked: window.open("https://github.com/canonic/playground", "windowName", "external=yes")
+                                    }
                                 }
                             }
 
