@@ -337,6 +337,18 @@ Item {
                                     }
                                     spacing: 10
 
+                                    Metonym.Button {
+                                        label: 'Playground'
+                                        icon.source: root.theme.icons.canonicPlayground
+
+                                        LayoutMirroring.enabled: true
+                                        LayoutMirroring.childrenInherit: true
+
+                                        QtLayouts.Layout.alignment: Qt.AlignVCenter
+
+                                        onClicked: window.location.href = 'https://playground.canonic.com'
+                                    }
+
                                     Metonym.TextField {
                                         id: documentTitleTextField
                                         text: ``
