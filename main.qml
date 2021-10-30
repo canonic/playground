@@ -532,56 +532,72 @@ Item {
 
                                     height: Math.max(flickable.height, contentHeight)
 
-                                    text: "import QtQuick
-import QtQuick3D as QtQuick3D
+                                    text: `import QtQuick
+import 'https://www.canonic.com/metonym/release/Metonym/' 0.1 as Metonym
 
 /**
- * Simple rotating cube example
+ * Canonic Playground floating balloon example.
  **/
-QtQuick3D.View3D {
+Metonym.Pane {
     id: view
     anchors.fill: parent
 
-    environment: QtQuick3D.SceneEnvironment {
-    }
+    backgroundColor: root.theme.col18
 
-    QtQuick3D.OrthographicCamera {
-        position: Qt.vector3d(0, 250, 300)
-        eulerRotation.x: -40
-    }
+    Column {
+        anchors.centerIn: parent
+        spacing: 5
 
-    QtQuick3D.DirectionalLight {
-        eulerRotation.x: -30
-        eulerRotation.y: -70
-        color: root.theme.brand
-    }
+        Metonym.Icon {
+            width: 160
+            height: 160
+            source: root.theme.icons.canonicPlayground
+            color: root.theme.col0
+            anchors.horizontalCenter: parent.horizontalCenter
 
-    QtQuick3D.DirectionalLight {
-        eulerRotation.x: -20
-        eulerRotation.y: 70
-        brightness: 0.1
-    }
-
-    QtQuick3D.Model {
-        position: Qt.vector3d(0, 0, 0)
-        source: '#Cube'
-
-        materials: [
-            QtQuick3D.DefaultMaterial {
-                diffuseColor: 'white'
-            }
-        ]
-
-        SequentialAnimation on eulerRotation.y {
-            loops: Animation.Infinite
-            PropertyAnimation {
-                duration: 4000
-                from: 0
-                to: 360
+            SequentialAnimation on y {
+                loops: Animation.Infinite
+                NumberAnimation {
+                    duration: 3000
+                    to: -15
+                    from: 15
+                    easing.type: Easing.InOutSine
+                }
+                NumberAnimation {
+                    duration: 3000
+                    to: 15
+                    from: -15
+                    easing.type: Easing.InOutSine
+                }
             }
         }
+
+        Metonym.Label {
+            text: 'Playground'
+            font.pointSize: 20
+            anchors.horizontalCenter: parent.horizontalCenter
+        }
+
+        Metonym.Label {
+            text: 'QML Live Editor'
+            font.pointSize: 14
+            color: root.theme.col4
+            anchors.horizontalCenter: parent.horizontalCenter
+        }
+
+        Item {
+            height:8
+            width: 1
+        }
+
+        Metonym.Label {
+            text: 'Canonic'
+            fontGroup: root.theme.font2
+            font.pointSize: 14
+            anchors.horizontalCenter: parent.horizontalCenter
+        }
     }
-}"
+}`;
 
                                     onTextChanged: {
                                         // Not nice but we can't update the cusor when the cursor changes because it seems
