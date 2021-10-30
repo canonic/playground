@@ -345,14 +345,6 @@ Item {
                                         QtLayouts.Layout.preferredWidth: 300
                                     }
 
-                                    Metonym.TextField {
-                                        id: documentDescriptionTextField
-                                        text: ``
-                                        placeholderText: 'No Description'
-                                        selectByMouse: true
-                                        QtLayouts.Layout.fillWidth: true
-                                    }
-
                                     Metonym.Button {
                                         label: 'Save'
                                         onClicked: savePopup.open()
@@ -1238,7 +1230,7 @@ Metonym.Pane {
                         savePopup.visible = true
 
                         const documentTitle = documentTitleTextField.text
-                        const documentDescription = documentDescriptionTextField.text
+                        const documentDescription = ''
                         const documentContent = textEditor.text
 
                         const endpoint = 'https://playground.canonic.com/save'
