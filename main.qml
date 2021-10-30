@@ -399,7 +399,9 @@ Item {
 
                                 clip: true
                                 Metonym.ScrollBar.vertical: Metonym.ScrollBar { }
-                                Metonym.ScrollBar.horizontal: Metonym.ScrollBar { }
+                                Metonym.ScrollBar.horizontal: Metonym.ScrollBar {
+                                    policy: flickable.width < flickable.contentWidth ? Metonym.ScrollBar.AlwaysOn : Metonym.ScrollBar.AlwaysOff
+                                }
 
                                 contentHeight: textEditor.height
                                 contentWidth: textEditor.width + __lineNumberRepeaterContainer.width
