@@ -324,7 +324,7 @@ Item {
 
                             Rectangle {
                                 id: metaControls
-                                height: 32
+                                height: 40
                                 width: parent.width
                                 color: root.theme instanceof Metonym.CanonicDarkTheme ? root.theme.colourMain(0.3): root.theme.col18
 
@@ -349,6 +349,10 @@ Item {
                                         onClicked: window.location.href = 'https://playground.canonic.com'
                                     }
 
+                                    Item {
+                                        QtLayouts.Layout.fillWidth: true
+                                    }
+
                                     Metonym.TextField {
                                         id: documentTitleTextField
                                         text: ``
@@ -359,7 +363,12 @@ Item {
 
                                     Metonym.Button {
                                         label: 'Save'
+                                        bordered: true
                                         onClicked: savePopup.open()
+                                    }
+
+                                    Item {
+                                        QtLayouts.Layout.fillWidth: true
                                     }
 
                                     Metonym.Button {
