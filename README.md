@@ -1,6 +1,6 @@
 # Canonic | [Playground](https://playground.canonic.com)
 
-![Discord](https://img.shields.io/discord/893522285204488192?style=for-the-badge) ![GitHub](https://img.shields.io/github/license/canonic/playground?style=for-the-badge)
+[![Discord](https://img.shields.io/discord/893522285204488192?style=for-the-badge)](https://discord.com/invite/YcsEwdaNbR) ![GitHub](https://img.shields.io/github/license/canonic/playground?style=for-the-badge)
 
 ---
 
