@@ -1,10 +1,14 @@
-# Canonic | Playground
+# Canonic | [Playground](https://playground.canonic.com)
+
+![Discord](https://img.shields.io/discord/893522285204488192?style=for-the-badge) ![GitHub](https://img.shields.io/github/license/canonic/playground?style=for-the-badge)
+
+---
 
 [Playground](https://playground.canonic.com) is a pure QML live code editor for testing and showcasing QML code snippets online. 
 
 ![Image](images/playground_landing_preview.gif)
 
-## Open in your Browser
+## [Open in your Browser](https://playground.canonic.com)
 
 Playground is designed to be used within your browser via WebAssembly using the [Canonic QML Web Browser](https://github.com/canonic/canonic).
 
